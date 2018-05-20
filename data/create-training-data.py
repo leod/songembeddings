@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import numpy as np
+import pickle
 
 parser = argparse.ArgumentParser(description='Create training data from a list of songs in a library. The song information is passed line-by-line on STDIN.')
 parser.add_argument('--library', help='Path to the library in which the songs are stored')
@@ -33,7 +34,7 @@ for line in sys.stdin:
     songs.append((artist, title, features_file))
 
 songs_path = os.path.join(args.out, 'SONGS')
-print("Writing song list to '{}'", songs_path)
+print("Writing song list to '{}'".format(songs_path))
 
 with open(songs_path, 'w') as f_songs:
     for song in songs:
@@ -43,7 +44,7 @@ song_examples = []
 
 print("Reading in songs from library '{}' ...".format(args.library))
 
-for song in songs:
+for (song_id, song) in enumerate(songs):
     features = np.transpose(np.load(song[2]))
     length = np.shape(features)[0]
     num_examples = length // args.sequence_length
@@ -51,16 +52,19 @@ for song in songs:
     features_prefix = features[:num_examples * args.sequence_length, :] 
     examples = np.split(features_prefix, num_examples)
 
-    print('{} - {}: {}'.format(song[0], song[1], np.shape(examples)))
+    print('Song: {} - {}: {}'.format(song[0], song[1], np.shape(examples)))
 
-    song_examples.append(examples)
+    for example in examples:
+        song_examples.append((song_id, example))
 
-all_examples = np.vstack(song_examples)
+print('Got {} training examples'.format(len(song_examples)))
+print('Average number of examples per song: {:.2f}'.format(len(song_examples) / len(songs)))
 
-print('All training examples: {}'.format(np.shape(all_examples)))
-
-examples_path = os.path.join(args.out, 'examples.npy')
+examples_path = os.path.join(args.out, 'examples.pkl')
 print("Writing training examples to '{}'".format(examples_path))
 
-np.save(examples_path, all_examples)
+with open(examples_path, 'wb') as f_examples:
+    pickle.dump(song_examples, f_examples)
+
+#np.save(examples_path, song_examples)
 
