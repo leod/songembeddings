@@ -5,16 +5,17 @@ import os
 import argparse
 import numpy as np
 import pickle
+import random
 
 parser = argparse.ArgumentParser(description='Create training data from a list of songs in a library. The song information is passed line-by-line on STDIN.')
-parser.add_argument('--library', help='Path to the library in which the songs are stored')
-parser.add_argument('--out', help='Name of the directory dedicated to the training data')
+parser.add_argument('--library', required=True, help='Path to the library in which the songs are stored')
+parser.add_argument('--out', required=True, help='Name of the directory dedicated to the training data')
+parser.add_argument('--sequence_length', type=int, required=True, help='Sequence length of one example')
 parser.add_argument('--no_shuffle', action='store_true', help='Whether to shuffle the training data (on the level of examples)')
-parser.add_argument('--sequence_length', type=int, help='Sequence length of one example')
 args = parser.parse_args()
 
 if os.path.isdir(args.out):
-    sys.stderr.write("Output directory already exists: '{}'. Aborting.".format(args.out))
+    sys.stderr.write("Output directory already exists: '{}'. Aborting.\n".format(args.out))
     sys.exit(1)
 else:
     os.mkdir(args.out)
@@ -33,7 +34,7 @@ for line in sys.stdin:
 
     songs.append((artist, title, features_file))
 
-songs_path = os.path.join(args.out, 'SONGS')
+songs_path = os.path.join(args.out, 'songs')
 print("Writing song list to '{}'".format(songs_path))
 
 with open(songs_path, 'w') as f_songs:
@@ -60,6 +61,10 @@ for (song_id, song) in enumerate(songs):
 print('Got {} training examples'.format(len(song_examples)))
 print('Average number of examples per song: {:.2f}'.format(len(song_examples) / len(songs)))
 
+if not args.no_shuffle:
+    print("Shuffling examples")
+    random.shuffle(song_examples)
+
 examples_path = os.path.join(args.out, 'examples.pkl')
 print("Writing training examples to '{}'".format(examples_path))
 
@@ -67,4 +72,3 @@ with open(examples_path, 'wb') as f_examples:
     pickle.dump(song_examples, f_examples)
 
 #np.save(examples_path, song_examples)
-
