@@ -1,45 +1,24 @@
 #!/usr/bin/env python
 
 import argparse
-import pickle
-import os
 import pprint
 import sys
 import time
 
 import tensorflow as tf
 
-config = {}
-config['sequence_length'] = 50
-config['num_features'] = 13
-config['hidden_size'] = 128
-config['embedding_size'] = 64
-config['batch_size'] = 100
-config['learning_rate'] = 0.001
-config['max_steps'] = 1000000
+import config
+import data
+import model
 
 parser = argparse.ArgumentParser(description='Train song embeddings.')
-parser.add_argument('--data', required=True, help='Training data directory')
+parser.add_argument('--config', '-c', required=True, help='Config file')
+parser.add_argument('--data', '-d', required=True, help='Training data directory')
+parser.add_argument('--max_steps', type=int, default=1000000, help='Number of steps to train for')
 args = parser.parse_args()
 
-songs_path = os.path.join(args.data, 'songs')
-print("Loading song list from '{}' ...".format(songs_path))
-
-with open(songs_path) as f_songs:
-    songs = []
-    for line in f_songs:
-        toks = line.strip().split('\t')
-        songs.append((toks[0], toks[1]))
-
-print("Got {} songs".format(len(songs)))
-
-examples_path = os.path.join(args.data, 'examples.pkl')
-print("Loading training examples from '{}' ...".format(examples_path))
-
-with open(examples_path, 'rb') as f_examples:
-    train_examples = pickle.load(f_examples)
-
-print("Got {} examples".format(len(train_examples)))
+config = config.load(args.config)
+(train_songs, train_examples) = data.load(args.data)
 
 print("Model configuration: ")
 pprint.PrettyPrinter(indent=4).pprint(config)
@@ -49,52 +28,15 @@ target_feature_sequences = tf.placeholder(
     tf.float32,
     [None, config['sequence_length'], config['num_features']],
 )
-
-with tf.device("/cpu:0"):
-    song_embedding_table = tf.get_variable(
-        "song_embedding_table",
-        [len(songs), config['embedding_size']],
-    )
-
-    # [batch_size, embedding_size]
-    song_embeddings = tf.nn.embedding_lookup(song_embedding_table, input_song_ids)
-
-decoder_rnn = tf.contrib.rnn.BasicLSTMCell(config['hidden_size'])
-decoder_initial_state = decoder_rnn.zero_state(tf.shape(input_song_ids)[0], tf.float32)
-
-# [batch_size, sequence_length, embedding_size]
-tiled_song_embeddings = tf.tile(
-    tf.expand_dims(song_embeddings, 1),
-    [1, config['sequence_length'], 1],
-)
-
-# [batch_size, sequence_length, embedding_size+num_features]
-decoder_inputs = tf.concat([tiled_song_embeddings, target_feature_sequences], axis=2)
-
-decoder_outputs, _decoder_state = tf.nn.dynamic_rnn(
-    decoder_rnn,
-    decoder_inputs,
-    initial_state=decoder_initial_state,
-)
-
-output_W = tf.get_variable('output_W', [config['hidden_size'], config['num_features']])
-tiled_output_W = tf.tile(
-    tf.expand_dims(output_W, 0),
-    [config['batch_size'], 1, 1],
-)
-
-output_b = tf.get_variable('output_b', [config['num_features']])
-feature_outputs = tf.matmul(decoder_outputs, tiled_output_W) + output_b
+feature_outputs = model.build(config, len(train_songs), input_song_ids, target_feature_sequences)
 
 loss = tf.losses.mean_squared_error(target_feature_sequences, feature_outputs)
 
-tf.summary.scalar('loss', loss)
-
 optimizer = tf.train.AdamOptimizer(config['learning_rate'])
-
 global_step = tf.Variable(0, name='global_step', trainable=False)
 train_op = optimizer.minimize(loss, global_step=global_step)
 
+tf.summary.scalar('loss', loss)
 summary = tf.summary.merge_all()
 
 saver = tf.train.Saver()
@@ -108,7 +50,7 @@ with tf.Session() as sess:
     next_data_index = 0
     num_seen_examples = 0
 
-    for step in range(config['max_steps']):
+    for step in range(args.max_steps):
         start_time = time.time()
 
         song_ids = []
@@ -137,5 +79,5 @@ with tf.Session() as sess:
             summary_writer.add_summary(summary_str, step)
             summary_writer.flush()
 
-        if (step + 1) % 1000 == 0 or (step + 1) == config['max_steps']:
+        if (step + 1) % 1000 == 0 or (step + 1) == args.max_steps:
             saver.save(sess, './model.ckpt', global_step=step)

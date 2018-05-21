@@ -47,7 +47,7 @@ song_examples = []
 print("Reading in songs from library '{}' ...".format(args.library))
 
 for (song_id, song) in enumerate(songs):
-    features = np.transpose(np.load(song[2]))
+    features = np.transpose(np.load(song[3]))
     length = np.shape(features)[0]
     num_examples = length // args.sequence_length
 
