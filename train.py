@@ -14,9 +14,9 @@ config['sequence_length'] = 50
 config['num_features'] = 13
 config['hidden_size'] = 128
 config['embedding_size'] = 64
-config['batch_size'] = 32
-config['learning_rate'] = 0.01
-config['max_steps'] = 10000
+config['batch_size'] = 100
+config['learning_rate'] = 0.001
+config['max_steps'] = 1000000
 
 parser = argparse.ArgumentParser(description='Train song embeddings.')
 parser.add_argument('--data', required=True, help='Training data directory')
@@ -39,7 +39,7 @@ print("Loading training examples from '{}' ...".format(examples_path))
 with open(examples_path, 'rb') as f_examples:
     train_examples = pickle.load(f_examples)
 
-print("Loading finished")
+print("Got {} examples".format(len(train_examples)))
 
 print("Model configuration: ")
 pprint.PrettyPrinter(indent=4).pprint(config)
@@ -90,7 +90,7 @@ loss = tf.losses.mean_squared_error(target_feature_sequences, feature_outputs)
 
 tf.summary.scalar('loss', loss)
 
-optimizer = tf.train.GradientDescentOptimizer(config['learning_rate'])
+optimizer = tf.train.AdamOptimizer(config['learning_rate'])
 
 global_step = tf.Variable(0, name='global_step', trainable=False)
 train_op = optimizer.minimize(loss, global_step=global_step)
@@ -106,6 +106,7 @@ with tf.Session() as sess:
     sess.run(init)
 
     next_data_index = 0
+    num_seen_examples = 0
 
     for step in range(config['max_steps']):
         start_time = time.time()
@@ -117,6 +118,7 @@ with tf.Session() as sess:
             song_ids.append(train_examples[next_data_index][0])
             feature_sequences.append(train_examples[next_data_index][1])
             next_data_index += 1
+            num_seen_examples += 1
             if next_data_index == len(train_examples):
                 next_data_index = 0
 
@@ -129,7 +131,7 @@ with tf.Session() as sess:
         duration = time.time() - start_time
 
         if step % 100 == 0:
-            print('Step {}: loss={:.2} ({:.3} sec)'.format(step, loss_value, duration))
+            print('Step {} ({:.2} epochs): loss={:.2} ({:.3} sec)'.format(step, num_seen_examples / len(train_examples), loss_value, duration))
 
             summary_str = sess.run(summary, feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, step)
