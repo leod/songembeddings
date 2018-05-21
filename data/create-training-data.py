@@ -25,21 +25,22 @@ songs = []
 for line in sys.stdin:
     toks = line.strip().split('\t')
     artist = toks[0]
-    title = toks[1]
-    features_file = os.path.join(args.library, toks[4])
+    album = toks[1]
+    title = toks[2]
+    features_file = os.path.join(args.library, toks[5])
 
     if not os.path.exists(features_file):
         sys.stderr.write("WARNING: Ignoring nonexistent file '{}'\n".format(features_file))
         continue
 
-    songs.append((artist, title, features_file))
+    songs.append((artist, album, title, features_file))
 
 songs_path = os.path.join(args.out, 'songs')
 print("Writing song list to '{}'".format(songs_path))
 
 with open(songs_path, 'w') as f_songs:
     for song in songs:
-        f_songs.write('{}\t{}\n'.format(song[0], song[1]))
+        f_songs.write('{} - {} - {}\n'.format(song[0], song[1], song[2]))
 
 song_examples = []
 
@@ -53,7 +54,7 @@ for (song_id, song) in enumerate(songs):
     features_prefix = features[:num_examples * args.sequence_length, :] 
     examples = np.split(features_prefix, num_examples)
 
-    print('Song: {} - {}: {}'.format(song[0], song[1], np.shape(examples)))
+    print('Song: {} - {} - {}: {}'.format(song[0], song[1], song[2], np.shape(examples)))
 
     for example in examples:
         song_examples.append((song_id, example))
