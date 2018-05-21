@@ -13,4 +13,5 @@ args = parser.parse_args()
 
 y, sr = librosa.load(args.file)
 mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=args.hop_length, n_mfcc=args.n_mfcc)
+print(mfcc[:, 1])
 np.save(args.out, mfcc)

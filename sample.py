@@ -41,7 +41,7 @@ with tf.Session() as sess:
     # and instead recomputes from scratch
     for i in range(args.n_samples):
         if (i + 1) % 50 == 0:
-            #print(outputs[-1])
+            print(outputs[-1])
             sys.stdout.write('.')
             sys.stdout.flush()
 
