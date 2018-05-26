@@ -9,7 +9,10 @@ def load_songs_info(path):
 
     with open(songs_path) as f_songs:
         for line in f_songs:
-            songs.append(line.strip())
+            toks = line.strip().split('\t')
+            if len(toks) != 3:
+                raise ValueError('Got {} columns in a songs file, should be 3'.format(len(toks)))
+            songs.append(toks)
 
     print("Got {} songs".format(len(songs)))
 

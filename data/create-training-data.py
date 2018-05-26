@@ -8,8 +8,8 @@ import pickle
 import random
 
 parser = argparse.ArgumentParser(description='Create training data from a list of songs in a library. The song information is passed line-by-line on STDIN.')
-parser.add_argument('--library', required=True, help='Path to the library in which the songs are stored')
-parser.add_argument('--out', required=True, help='Name of the directory dedicated to the training data')
+parser.add_argument('--library', '-l', required=True, help='Path to the library in which the songs are stored')
+parser.add_argument('--out', '-o', required=True, help='Name of the directory dedicated to the training data')
 parser.add_argument('--sequence_length', type=int, required=True, help='Sequence length of one example')
 parser.add_argument('--no_shuffle', action='store_true', help='Whether to shuffle the training data (on the level of examples)')
 args = parser.parse_args()
