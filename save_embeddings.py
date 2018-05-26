@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description='Save learned embeddings in a file.
 parser.add_argument('--config', '-c', required=True, help='Config file')
 parser.add_argument('--data', '-d', required=True, help='Training data directory')
 parser.add_argument('--ckpt', required=True, help='TensorFlow checkpoint file')
-parser.add_argument('--out', required=True, help='File to save embeddings in (numpy format)')
+parser.add_argument('--out', '-o', required=True, help='File to save embeddings in (numpy format)')
 args = parser.parse_args()
 
 config = config.load(args.config)
