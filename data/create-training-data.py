@@ -40,7 +40,7 @@ print("Writing song list to '{}'".format(songs_path))
 
 with open(songs_path, 'w') as f_songs:
     for song in songs:
-        f_songs.write('{} - {} - {}\n'.format(song[0], song[1], song[2]))
+        f_songs.write('{}\t{}\t{}\n'.format(song[0], song[1], song[2]))
 
 song_examples = []
 
